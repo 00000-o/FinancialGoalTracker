@@ -875,7 +875,27 @@ function calcTax(nominalInterest, nominalRate, infl){
   // Необлагаемый лимит = 1 000 000 ₽ × ключевую ставку (НК РФ ст. 214.2)
   const exempt=1000000*keyRate;
   const taxable=Math.max(0,nominalInterest-exempt);
-  const tax=taxable*0.13;
+  if(taxable<=0) return 0;
+  // Прогрессивная шкала НДФЛ с 2025 года (НК РФ ст. 224)
+  // Применяется к налогооблагаемой базе сверх лимита
+  let tax=0;
+  const brackets=[
+    {limit:2400000, rate:0.13},
+    {limit:5000000, rate:0.15},
+    {limit:20000000, rate:0.18},
+    {limit:50000000, rate:0.20},
+    {limit:Infinity, rate:0.22},
+  ];
+  let remaining=taxable;
+  let prev=0;
+  for(const b of brackets){
+    const slice=Math.min(remaining, b.limit-prev);
+    if(slice<=0) break;
+    tax+=slice*b.rate;
+    remaining-=slice;
+    prev=b.limit;
+    if(remaining<=0) break;
+  }
   return tax<100?0:tax;
 }
 
@@ -984,12 +1004,23 @@ function calcForecast(){
     const yrContrib=contrib*months;
 
     // Номинальный доход — для роста баланса и для налога
+    // Точное число дней в расчётном периоде
+    const periodStart=isFirst?today:new Date(yr,0,1);
+    const periodEnd=isFirst?new Date(startYr+1,0,1):new Date(yr+1,0,1);
+    const daysInPeriod=(periodEnd-periodStart)/86400000;
+    const daysInThisYear=((new Date(yr+1,0,1))-(new Date(yr,0,1)))/86400000; // 365 или 366
+
     let interest;
     if(compound){
+      // Сложный процент: формула с капитализацией
       interest=balance*(Math.pow(1+nominalRate/compN,compN*frac)-1)
                +yrContrib*(Math.pow(1+nominalRate/compN,compN*frac/2)-1);
     } else {
-      interest=balance*nominalRate*frac+yrContrib*nominalRate*frac/2;
+      // Простой процент по банковской формуле: I = S × R × t / K
+      // balance зарабатывает за все daysInPeriod дней
+      // yrContrib поступает равномерно — считаем что в среднем лежит половину периода
+      interest=balance*nominalRate*(daysInPeriod/daysInThisYear)
+               +yrContrib*nominalRate*(daysInPeriod/daysInThisYear)/2;
     }
 
     const tax=calcTax(interest,nominalRate,infl);
@@ -1014,13 +1045,19 @@ function calcForecast(){
     for(let m=0;m<months;m++){
       totalMonths++;
       const mDate=new Date(yr,startMonth+m,1);
+      const mDateNext=new Date(yr,startMonth+m+1,1);
+      const daysInMonth=(mDateNext-mDate)/86400000;
+      const daysInThisYearM=((new Date(mDate.getFullYear()+1,0,1))-(new Date(mDate.getFullYear(),0,1)))/86400000;
       const mLabel=(mDate.getMonth()+1).toString().padStart(2,'0')+'.'+mDate.getFullYear();
       const mContrib=contrib;
       let mInt;
       if(compound&&compN===12){
-        mInt=mBal*monthNomRate+mContrib*monthNomRate/2;
+        const mNomRate=nominalRate/12;
+        mInt=mBal*mNomRate+mContrib*mNomRate/2;
       } else {
-        mInt=mBal*nominalRate/12+mContrib*nominalRate/24;
+        // Простой процент: I = S × R × t / K
+        mInt=mBal*nominalRate*(daysInMonth/daysInThisYearM)
+             +mContrib*nominalRate*(daysInMonth/daysInThisYearM)/2;
       }
       const mEnd=mBal+mContrib+mInt-monthTax;
       const mHousing=price0*Math.pow(1+priceGrowthNomRate,totalMonths/12);
