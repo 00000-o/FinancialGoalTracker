@@ -1099,7 +1099,7 @@ function renderFcTable(){
   const thead=document.getElementById('fc-thead');
   const tbody=document.getElementById('fc-tbody');
   const period=monthly?'Месяц':'Год';
-  thead.innerHTML='<tr><th>'+period+'</th><th>Начало периода</th><th>Взносы</th><th>% Доход</th><th>Налог</th><th>Конец периода</th><th>Треб. взнос</th><th>Стоимость цели</th><th>Доля</th></tr>';
+  thead.innerHTML='<tr><th>'+period+'</th><th>Начало периода</th><th>Взносы</th><th>% Доход</th><th><span class="col-help">Налог<button class="help-btn" onclick="toggleHelp(event)">ⓘ</button></span></th><th>Конец периода</th><th>Треб. взнос</th><th>Стоимость цели</th><th>Доля</th></tr>';
   tbody.innerHTML='';
   const rows=monthly?fcMonthRows:fcRows;
 
@@ -1925,5 +1925,15 @@ window.addEventListener('resize',()=>{
 });
 if('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');
 </script>
+<!-- Tax help popup (global, positioned by JS) -->
+<div class="help-popup" id="tax-help">
+  <b>Налог на доход по вкладу</b><br><br>
+  Ключевая ставка ≈ (инфляция + номинальная доходность) / 2<br><br>
+  Необлагаемый минимум = 1 000 000 ₽ × ключевую ставку (НК РФ ст. 214.2)<br><br>
+  Налог считается по прогрессивной шкале НДФЛ 2025:<br>
+  до 2,4 млн — 13%, до 5 млн — 15%, до 20 млн — 18%,<br>
+  до 50 млн — 20%, свыше — 22%<br><br>
+  Если доход не превышает необлагаемый минимум, ставится 0.
+</div>
 </body>
 </html>
