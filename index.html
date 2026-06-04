@@ -222,7 +222,13 @@ canvas#chart{display:block;position:absolute;top:0;left:0}
               <input type="text" id="p-deposit" value="1 000 000" inputmode="numeric" oninput="fmtThis(this)">
             </div>
           </div>
-          <div id="dep-auto-lbl" style="display:none;margin-bottom:12px;padding:10px 12px;background:var(--blue-l);border:1px solid var(--blue-brd);border-radius:var(--rs);font-size:13px;font-weight:600;color:var(--txt)"></div>
+          <div id="dep-auto-lbl" style="display:none;margin-bottom:8px;padding:10px 12px;background:var(--blue-l);border:1px solid var(--blue-brd);border-radius:var(--rs);font-size:13px;font-weight:600;color:var(--txt)"></div>
+          <div id="dep-next-month-row" style="display:none;margin-bottom:12px">
+            <div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:var(--blue-l);border:1px solid var(--blue-brd);border-radius:var(--rs)">
+              <label class="tgl" style="flex-shrink:0"><input type="checkbox" id="p-next-month"><div class="tgl-track"></div></label>
+              <span style="font-size:12px;font-weight:500;color:var(--txt2);line-height:1.4">Взнос этого месяца уже внесён — учитывать взносы со следующего месяца</span>
+            </div>
+          </div>
           <div class="tile-grid" style="margin-bottom:12px">
             <div class="fi">
               <label>Взнос в месяц (₽)</label>
@@ -715,14 +721,19 @@ function onDepModeChange(){
   const v=document.getElementById('p-dep-mode').value;
   document.getElementById('dep-manual-fi').style.display=v==='manual'?'':'none';
   const al=document.getElementById('dep-auto-lbl');
+  const nm=document.getElementById('dep-next-month-row');
   if(v==='last'){
+    nm.style.display='';
     al.style.display='';
     if(entries.length){
       const last=entries[entries.length-1];
       const d=new Date(last.date+'T00:00:00').toLocaleDateString('ru-RU',{day:'2-digit',month:'long',year:'numeric'});
       al.textContent=fmtInt(last.amount)+' ₽  ·  '+d;
     } else al.textContent='Нет записей в «Накоплениях»';
-  } else al.style.display='none';
+  } else {
+    al.style.display='none';
+    nm.style.display='none';
+  }
 }
 
 // ════ GOAL TYPE ════
@@ -904,10 +915,19 @@ function calcForecast(){
   if(depMode==='last'&&entries.length){
     const last=entries[entries.length-1];
     deposit=last.amount;
-    startDate=new Date(last.date+'T00:00:00');
+    const entryDate=new Date(last.date+'T00:00:00');
+    const nextMonth=document.getElementById('p-next-month')&&document.getElementById('p-next-month').checked;
+    if(nextMonth){
+      // Start from the 1st of next month — this month's contribution already made
+      startDate=new Date(entryDate.getFullYear(), entryDate.getMonth()+1, 1);
+    } else {
+      startDate=entryDate;
+    }
   } else {
     deposit=nv('p-deposit');
-    startDate=new Date(CY,0,1);
+    // Ручной ввод — стартуем с сегодняшней даты, а не с 1 января
+    startDate=new Date();
+    startDate.setHours(0,0,0,0);
   }
 
   const contrib=nv('p-contrib');
