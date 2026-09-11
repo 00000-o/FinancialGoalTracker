@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" content="#E8001C">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Накопления">
@@ -98,12 +99,12 @@ body{font-family:'Manrope',-apple-system,sans-serif;background:#F0F0F0;color:var
 
 /* table */
 .tscroll{overflow-x:auto;margin:0 -24px;padding:0 24px}
-table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:580px}
-thead th{font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em;padding:0 8px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--brd);position:relative}
+table{width:100%;border-collapse:collapse;font-size:11.5px;min-width:460px}
+thead th{font-size:9.5px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.04em;padding:0 5px 10px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--brd);position:relative;overflow:hidden}
 thead th:first-child{text-align:left}
 table.fixed-cols{table-layout:fixed;width:100%}
 table.fixed-cols thead th{overflow:hidden;text-overflow:ellipsis}
-tbody td{padding:10px 8px;text-align:right;border-bottom:1px solid var(--brd);font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--txt)}
+tbody td{padding:9px 5px;text-align:right;border-bottom:1px solid var(--brd);font-variant-numeric:tabular-nums;white-space:nowrap;color:var(--txt);overflow:hidden;text-overflow:ellipsis}
 tbody td:first-child{text-align:left;font-weight:700}
 .ms td{color:var(--red)!important;background:rgba(232,0,28,0.07)}
 .ms td:first-child{border-left:3px solid var(--red);padding-left:5px}
@@ -149,12 +150,6 @@ canvas#chart{display:block;position:absolute;top:0;left:0}
 .btn-sm{padding:9px 16px;border:1.5px solid var(--brd);border-radius:var(--rs);background:var(--bg);font-family:inherit;font-size:13px;font-weight:600;color:var(--txt2);cursor:pointer}
 .btn-sm:active{background:var(--bg3)}
 .btn-sm.danger{border-color:var(--red);color:var(--red)}
-
-.range-track-wrap{position:relative;height:28px;display:flex;align-items:center}
-.range-track{position:absolute;left:10px;right:10px;height:4px;background:var(--bg3);border-radius:2px}
-.range-fill{position:absolute;height:4px;background:var(--blue-d);border-radius:2px;top:0}
-.range-thumb{position:absolute;width:20px;height:20px;background:#fff;border:2.5px solid var(--blue-d);border-radius:50%;top:50%;transform:translate(-50%,-50%);cursor:grab;box-shadow:0 1px 4px rgba(0,0,0,.15);touch-action:none;z-index:2}
-.range-thumb:active{cursor:grabbing;box-shadow:0 0 0 4px rgba(90,157,191,.2)}
 
 #content::-webkit-scrollbar{width:3px}
 #content::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:4px}
@@ -410,6 +405,17 @@ canvas#chart{display:block;position:absolute;top:0;left:0}
         </div>
         <div class="tscroll">
           <table id="fc-table" style="table-layout:fixed;width:100%">
+            <colgroup>
+              <col style="width:52px">
+              <col style="width:calc((100% - 52px) / 8)">
+              <col style="width:calc((100% - 52px) / 8)">
+              <col style="width:calc((100% - 52px) / 8)">
+              <col style="width:calc((100% - 52px) / 8)">
+              <col style="width:calc((100% - 52px) / 8)">
+              <col style="width:calc((100% - 52px) / 8)">
+              <col style="width:calc((100% - 52px) / 8)">
+              <col style="width:calc((100% - 52px) / 8)">
+            </colgroup>
             <thead id="fc-thead"></thead>
             <tbody id="fc-tbody"></tbody>
           </table>
@@ -450,20 +456,6 @@ canvas#chart{display:block;position:absolute;top:0;left:0}
           <canvas id="chart"></canvas>
           <div class="sline" id="sline"></div>
           <div class="sdot" id="sdot"></div>
-        </div>
-        <!-- Range slider -->
-        <div id="chart-range-wrap" style="display:none;padding:10px 16px 14px">
-          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--txt3);font-weight:600;margin-bottom:6px">
-            <span id="range-label-left">—</span>
-            <span id="range-label-right">—</span>
-          </div>
-          <div class="range-track-wrap" id="range-track-wrap">
-            <div class="range-track" id="range-track">
-              <div class="range-fill" id="range-fill"></div>
-            </div>
-            <div class="range-thumb" id="range-thumb-left" onmousedown="startDrag(event,'left')" ontouchstart="startDrag(event,'left')"></div>
-            <div class="range-thumb" id="range-thumb-right" onmousedown="startDrag(event,'right')" ontouchstart="startDrag(event,'right')"></div>
-          </div>
         </div>
       </div>
 
@@ -1285,14 +1277,9 @@ function addEntry(){
   entries.sort((a,b)=>a.date.localeCompare(b.date));
   save();
   document.getElementById('e-amt').value='';
-  rangeLeft=0; rangeRight=Math.max(0,entries.length-1);
   renderTracker();
 }
-function deleteEntry(i){
-  entries.splice(i,1); save();
-  rangeLeft=0; rangeRight=Math.max(0,entries.length-1);
-  renderTracker();
-}
+function deleteEntry(i){ entries.splice(i,1); save(); renderTracker(); }
 
 // ════ RENDER TRACKER ════
 function renderTracker(){
@@ -1372,63 +1359,6 @@ function renderTracker(){
 // ════ CHART ════
 let cPts=[];
 let aIdx=-1;
-let rangeLeft=0;   // index into entries
-let rangeRight=0;  // index into entries
-
-// ── Range slider drag ──
-let dragging=null;
-function startDrag(e,side){
-  e.preventDefault();
-  dragging=side;
-  document.addEventListener('mousemove',onDrag);
-  document.addEventListener('mouseup',stopDrag);
-  document.addEventListener('touchmove',onDrag,{passive:false});
-  document.addEventListener('touchend',stopDrag);
-}
-function stopDrag(){
-  dragging=null;
-  document.removeEventListener('mousemove',onDrag);
-  document.removeEventListener('mouseup',stopDrag);
-  document.removeEventListener('touchmove',onDrag);
-  document.removeEventListener('touchend',stopDrag);
-}
-function onDrag(e){
-  if(!dragging) return;
-  e.preventDefault();
-  const track=document.getElementById('range-track');
-  const rect=track.getBoundingClientRect();
-  const cx=(e.touches?e.touches[0].clientX:e.clientX);
-  const pct=Math.max(0,Math.min(1,(cx-rect.left)/rect.width));
-  const n=entries.length;
-  if(n<2) return;
-  const idx=Math.round(pct*(n-1));
-  if(dragging==='left'){
-    rangeLeft=Math.min(idx, rangeRight);
-  } else {
-    rangeRight=Math.max(idx, rangeLeft);
-  }
-  updateSliderUI();
-  renderChart();
-}
-function updateSliderUI(){
-  const n=entries.length;
-  if(n<2) return;
-  const pctL=rangeLeft/(n-1);
-  const pctR=rangeRight/(n-1);
-  const tL=document.getElementById('range-thumb-left');
-  const tR=document.getElementById('range-thumb-right');
-  const fill=document.getElementById('range-fill');
-  tL.style.left=(pctL*100)+'%';
-  tR.style.left=(pctR*100)+'%';
-  fill.style.left=(pctL*100)+'%';
-  fill.style.width=((pctR-pctL)*100)+'%';
-  const fmtE=e=>{
-    const d=new Date(e.date+'T00:00:00');
-    return d.toLocaleDateString('ru-RU',{day:'2-digit',month:'short',year:'numeric'});
-  };
-  document.getElementById('range-label-left').textContent=fmtE(entries[rangeLeft]);
-  document.getElementById('range-label-right').textContent=fmtE(entries[rangeRight]);
-}
 
 function niceSteps(minV,maxV,nTicks){
   const range=maxV-minV||1;
@@ -1467,29 +1397,15 @@ function renderChart(){
   const empty=document.getElementById('echrt');
   const sline=document.getElementById('sline');
   const sdot=document.getElementById('sdot');
-  const rangeWrap=document.getElementById('chart-range-wrap');
 
   if(!entries.length){
     canvas.style.display='none'; empty.style.display='flex';
     sline.style.display='none'; sdot.style.display='none';
-    rangeWrap.style.display='none';
-    wrap.style.height='220px';
     document.getElementById('ct-d').textContent='Нет данных';
     document.getElementById('ct-v').textContent='—';
     document.getElementById('ct-dl').innerHTML='&nbsp;';
     return;
   }
-
-  // Init range to full on first render
-  if(rangeRight===0&&entries.length>1) rangeRight=entries.length-1;
-  if(entries.length===1){ rangeLeft=0; rangeRight=0; }
-
-  // Show slider only if 2+ entries
-  rangeWrap.style.display=entries.length>1?'':'none';
-  if(entries.length>1) updateSliderUI();
-
-  // Slice entries to selected range
-  const visEntries=entries.slice(rangeLeft, rangeRight+1);
 
   empty.style.display='none';
   canvas.style.display='block';
@@ -1505,7 +1421,7 @@ function renderChart(){
   ctx.scale(PR,PR);
   ctx.clearRect(0,0,W,H);
 
-  const vals=visEntries.map(e=>e.amount);
+  const vals=entries.map(e=>e.amount);
   const minV=Math.min(...vals);
   const maxV=Math.max(...vals);
   const ySteps=niceSteps(minV,maxV,5);
@@ -1521,74 +1437,92 @@ function renderChart(){
   const gw=W-pad.l-pad.r;
   const gh=H-pad.t-pad.b;
 
-  const dates=visEntries.map(e=>new Date(e.date+'T00:00:00').getTime());
+  const dates=entries.map(e=>new Date(e.date+'T00:00:00').getTime());
   const tMin=dates[0];
   const tMax=dates[dates.length-1];
   const tRange=tMax-tMin||1;
 
-  function xOf(ts){ return visEntries.length===1?pad.l+gw/2:pad.l+((ts-tMin)/tRange)*gw; }
+  function xOf(ts){ return entries.length===1?pad.l+gw/2:pad.l+((ts-tMin)/tRange)*gw; }
   function yOf(v){ return pad.t+gh-((v-yMin)/yRange)*gh; }
 
-  cPts=visEntries.map((e,i)=>({x:xOf(dates[i]),y:yOf(e.amount),entry:e,idx:rangeLeft+i}));
+  cPts=entries.map((e,i)=>({x:xOf(dates[i]),y:yOf(e.amount),entry:e,idx:i}));
 
-  // Y grid + labels
+  // ── Y grid & labels ──
   ctx.textAlign='right';
   ySteps.forEach(v=>{
     const y=yOf(v);
     if(y<pad.t-2||y>pad.t+gh+2) return;
-    ctx.strokeStyle='rgba(0,0,0,0.06)'; ctx.lineWidth=1; ctx.setLineDash([]);
+    ctx.strokeStyle='rgba(0,0,0,0.06)';
+    ctx.lineWidth=1;
+    ctx.setLineDash([]);
     ctx.beginPath(); ctx.moveTo(pad.l,y); ctx.lineTo(pad.l+gw,y); ctx.stroke();
     ctx.fillStyle='#9A9A9A';
     ctx.font='500 10px Manrope,-apple-system,sans-serif';
     ctx.fillText(fAxis(v),pad.l-5,y+3.5);
   });
 
-  // Year separators
+  // ── Year separators ──
+  // find unique years in date range
   const startYearD=new Date(tMin).getFullYear();
   const endYearD=new Date(tMax).getFullYear();
-  ctx.setLineDash([3,3]); ctx.strokeStyle='rgba(0,0,0,0.08)'; ctx.lineWidth=1;
+  ctx.setLineDash([3,3]);
+  ctx.strokeStyle='rgba(0,0,0,0.08)';
+  ctx.lineWidth=1;
   for(let yr=startYearD+1;yr<=endYearD;yr++){
     const ts=new Date(yr,0,1).getTime();
-    if(ts<=tMin||ts>=tMax) continue;
+    if(ts<tMin||ts>tMax) continue;
     const x=xOf(ts);
     ctx.beginPath(); ctx.moveTo(x,pad.t); ctx.lineTo(x,pad.t+gh); ctx.stroke();
+    // year label at bottom
     ctx.setLineDash([]);
-    ctx.fillStyle='rgba(0,0,0,0.3)'; ctx.textAlign='center';
+    ctx.fillStyle='rgba(0,0,0,0.3)';
     ctx.font='500 9.5px Manrope,-apple-system,sans-serif';
+    ctx.textAlign='center';
     ctx.fillText(yr,x,pad.t+gh+13);
     ctx.setLineDash([3,3]);
   }
   ctx.setLineDash([]);
 
-  // X month labels
-  const MN=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
-  ctx.textAlign='center'; ctx.fillStyle='#ADADAD';
+  // ── X month labels ──
+  // only show month names, no year — between separators
+  ctx.textAlign='center';
+  ctx.fillStyle='#ADADAD';
   ctx.font='500 10px Manrope,-apple-system,sans-serif';
-  const rangeDays=(tMax-tMin)/86400000;
+  const MN=['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+  // determine pixel width per month
+  const rangeMs=tMax-tMin;
+  const rangeDays=rangeMs/86400000;
+  // if range < 60 days show each entry date, else show months
   if(rangeDays<60){
-    visEntries.forEach((_,i)=>{
-      const d=new Date(dates[i]); const x=cPts[i].x;
-      ctx.fillText(d.getDate()+' '+MN[d.getMonth()],x,H-6);
+    entries.forEach((_,i)=>{
+      const d=new Date(dates[i]);
+      const lbl=d.getDate()+' '+MN[d.getMonth()];
+      const x=cPts[i].x;
+      ctx.fillText(lbl,x,H-6);
     });
   } else {
+    // find first of each month in range
     const visited=new Set();
+    const step=rangeDays>730?3:1; // every month or every quarter
     for(let ts=tMin;ts<=tMax;ts+=86400000*28){
       const d=new Date(ts);
       const key=d.getFullYear()+'-'+d.getMonth();
       if(visited.has(key)) continue;
       visited.add(key);
-      const mts=new Date(d.getFullYear(),d.getMonth(),1).getTime();
-      if(mts<tMin||mts>tMax) continue;
-      const x=xOf(mts);
+      const monthTs=new Date(d.getFullYear(),d.getMonth(),1).getTime();
+      if(monthTs<tMin||monthTs>tMax) continue;
+      const x=xOf(monthTs);
+      // only draw if not too close to a year separator
       let nearSep=false;
       for(let yr=startYearD+1;yr<=endYearD;yr++){
-        if(Math.abs(x-xOf(new Date(yr,0,1).getTime()))<20){nearSep=true;break;}
+        const sx=xOf(new Date(yr,0,1).getTime());
+        if(Math.abs(x-sx)<20){nearSep=true;break;}
       }
-      if(!nearSep&&x>pad.l+15&&x<pad.l+gw-15) ctx.fillText(MN[d.getMonth()],x,H-6);
+      if(!nearSep && x>pad.l+15 && x<pad.l+gw-15) ctx.fillText(MN[d.getMonth()],x,H-6);
     }
   }
 
-  // Gradient fill
+  // ── Gradient fill ──
   const grad=ctx.createLinearGradient(0,pad.t,0,pad.t+gh);
   grad.addColorStop(0,'rgba(154,206,235,0.18)');
   grad.addColorStop(1,'rgba(154,206,235,0.00)');
@@ -1596,42 +1530,41 @@ function renderChart(){
   ctx.moveTo(cPts[0].x,pad.t+gh);
   cPts.forEach(p=>ctx.lineTo(p.x,p.y));
   ctx.lineTo(cPts[cPts.length-1].x,pad.t+gh);
-  ctx.closePath(); ctx.fillStyle=grad; ctx.fill();
+  ctx.closePath();
+  ctx.fillStyle=grad; ctx.fill();
 
-  // Line
+  // ── Line ──
   ctx.beginPath();
   cPts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
   ctx.strokeStyle='#5A9DBF'; ctx.lineWidth=2; ctx.lineJoin='round'; ctx.stroke();
 
-  // Dots
+  // ── Points ──
   cPts.forEach(p=>{
     ctx.beginPath(); ctx.arc(p.x,p.y,5,0,Math.PI*2);
     ctx.fillStyle='#fff'; ctx.fill();
     ctx.strokeStyle='rgba(90,157,191,0.6)'; ctx.lineWidth=2; ctx.stroke();
   });
 
-  // Reset tip to last visible point
-  if(aIdx<0||aIdx<rangeLeft||aIdx>rangeRight) aIdx=rangeRight;
-  const tipIdx=aIdx-rangeLeft; // index in cPts
-  updateTip(Math.max(0,Math.min(tipIdx,cPts.length-1)));
+  if(aIdx<0||aIdx>=entries.length) aIdx=entries.length-1;
+  updateTip(aIdx);
 }
 
 function updateTip(i){
   if(!cPts.length||i<0||i>=cPts.length) return;
-  aIdx=cPts[i].idx; // store global entry index
+  aIdx=i;
   const p=cPts[i];
   const e=p.entry;
   const d=new Date(e.date+'T00:00:00');
   document.getElementById('ct-d').textContent=d.toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});
   document.getElementById('ct-v').textContent=fmtInt(e.amount)+' ₽';
   const dlEl=document.getElementById('ct-dl');
-  if(p.idx>0){
-    const prev=entries[p.idx-1].amount;
+  if(i>0){
+    const prev=entries[i-1].amount;
     const delta=e.amount-prev;
     dlEl.textContent=(delta>=0?'+':'')+fmtInt(delta)+' ₽ к предыдущей записи';
     dlEl.style.color=delta>=0?'var(--darkblue)':'#E8001C';
   } else {
-    dlEl.innerHTML='&nbsp;';
+    dlEl.innerHTML='&nbsp;'; // keep height
   }
   const sl=document.getElementById('sline');
   const sd=document.getElementById('sdot');
