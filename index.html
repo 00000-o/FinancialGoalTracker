@@ -446,6 +446,20 @@ canvas#chart{display:block;position:absolute;top:0;left:0}
           <div class="sline" id="sline"></div>
           <div class="sdot" id="sdot"></div>
         </div>
+        <!-- Range slider -->
+        <div id="chart-range-wrap" style="display:none;padding:10px 16px 14px">
+          <div style="display:flex;justify-content:space-between;font-size:11px;color:var(--txt3);font-weight:600;margin-bottom:6px">
+            <span id="range-label-left">—</span>
+            <span id="range-label-right">—</span>
+          </div>
+          <div style="position:relative;height:28px;display:flex;align-items:center" id="range-track-wrap">
+            <div style="position:absolute;left:10px;right:10px;height:4px;background:var(--bg3);border-radius:2px" id="range-track">
+              <div style="position:absolute;height:4px;background:var(--blue-d);border-radius:2px;top:0" id="range-fill"></div>
+            </div>
+            <div class="range-thumb" id="range-thumb-left"></div>
+            <div class="range-thumb" id="range-thumb-right"></div>
+          </div>
+        </div>
       </div>
 
       <div class="aform">
