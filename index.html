@@ -151,6 +151,8 @@ canvas#chart{display:block;position:absolute;top:0;left:0}
 .btn-sm:active{background:var(--bg3)}
 .btn-sm.danger{border-color:var(--red);color:var(--red)}
 
+.range-thumb{position:absolute;width:22px;height:22px;background:#fff;border:2.5px solid var(--blue-d);border-radius:50%;top:50%;transform:translate(-50%,-50%);cursor:grab;box-shadow:0 1px 4px rgba(0,0,0,.15);touch-action:none;z-index:2}
+.range-thumb:active{cursor:grabbing;box-shadow:0 0 0 4px rgba(90,157,191,.2)}
 #content::-webkit-scrollbar{width:3px}
 #content::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:4px}
 </style>
@@ -456,8 +458,8 @@ canvas#chart{display:block;position:absolute;top:0;left:0}
             <div style="position:absolute;left:10px;right:10px;height:4px;background:var(--bg3);border-radius:2px" id="range-track">
               <div style="position:absolute;height:4px;background:var(--blue-d);border-radius:2px;top:0" id="range-fill"></div>
             </div>
-            <div class="range-thumb" id="range-thumb-left"></div>
-            <div class="range-thumb" id="range-thumb-right"></div>
+            <div class="range-thumb" id="range-thumb-left" onmousedown="startDrag(event,'left')" ontouchstart="startDrag(event,'left')"></div>
+            <div class="range-thumb" id="range-thumb-right" onmousedown="startDrag(event,'right')" ontouchstart="startDrag(event,'right')"></div>
           </div>
         </div>
       </div>
@@ -1273,9 +1275,14 @@ function addEntry(){
   entries.sort((a,b)=>a.date.localeCompare(b.date));
   save();
   document.getElementById('e-amt').value='';
+  rangeLeft=0; rangeRight=Math.max(0,entries.length-1);
   renderTracker();
 }
-function deleteEntry(i){ entries.splice(i,1); save(); renderTracker(); }
+function deleteEntry(i){
+  entries.splice(i,1); save();
+  rangeLeft=0; rangeRight=Math.max(0,entries.length-1);
+  renderTracker();
+}
 
 // ════ RENDER TRACKER ════
 function renderTracker(){
@@ -1355,6 +1362,59 @@ function renderTracker(){
 // ════ CHART ════
 let cPts=[];
 let aIdx=-1;
+let rangeLeft=0;
+let rangeRight=0;
+let dragging=null;
+
+function startDrag(e,side){
+  e.preventDefault();
+  dragging=side;
+  document.addEventListener('mousemove',onDrag);
+  document.addEventListener('mouseup',stopDrag);
+  document.addEventListener('touchmove',onDrag,{passive:false});
+  document.addEventListener('touchend',stopDrag);
+}
+function stopDrag(){
+  dragging=null;
+  document.removeEventListener('mousemove',onDrag);
+  document.removeEventListener('mouseup',stopDrag);
+  document.removeEventListener('touchmove',onDrag);
+  document.removeEventListener('touchend',stopDrag);
+}
+function onDrag(e){
+  if(!dragging) return;
+  e.preventDefault();
+  const track=document.getElementById('range-track');
+  const rect=track.getBoundingClientRect();
+  const cx=e.touches?e.touches[0].clientX:e.clientX;
+  const pct=Math.max(0,Math.min(1,(cx-rect.left)/rect.width));
+  const n=entries.length;
+  if(n<2) return;
+  const idx=Math.round(pct*(n-1));
+  if(dragging==='left') rangeLeft=Math.min(idx,rangeRight);
+  else rangeRight=Math.max(idx,rangeLeft);
+  updateSliderUI();
+  renderChart();
+}
+function updateSliderUI(){
+  const n=entries.length;
+  if(n<2) return;
+  const pctL=rangeLeft/(n-1);
+  const pctR=rangeRight/(n-1);
+  const tL=document.getElementById('range-thumb-left');
+  const tR=document.getElementById('range-thumb-right');
+  const fill=document.getElementById('range-fill');
+  tL.style.left=(pctL*100)+'%';
+  tR.style.left=(pctR*100)+'%';
+  fill.style.left=(pctL*100)+'%';
+  fill.style.width=((pctR-pctL)*100)+'%';
+  const fmt=e=>{
+    const d=new Date(e.date+'T00:00:00');
+    return d.toLocaleDateString('ru-RU',{day:'2-digit',month:'short',year:'numeric'});
+  };
+  document.getElementById('range-label-left').textContent=fmt(entries[rangeLeft]);
+  document.getElementById('range-label-right').textContent=fmt(entries[rangeRight]);
+}
 
 function niceSteps(minV,maxV,nTicks){
   const range=maxV-minV||1;
@@ -1393,15 +1453,27 @@ function renderChart(){
   const empty=document.getElementById('echrt');
   const sline=document.getElementById('sline');
   const sdot=document.getElementById('sdot');
+  const rangeWrap=document.getElementById('chart-range-wrap');
 
   if(!entries.length){
     canvas.style.display='none'; empty.style.display='flex';
     sline.style.display='none'; sdot.style.display='none';
+    rangeWrap.style.display='none';
     document.getElementById('ct-d').textContent='Нет данных';
     document.getElementById('ct-v').textContent='—';
     document.getElementById('ct-dl').innerHTML='&nbsp;';
     return;
   }
+
+  // Init range on first call or after reset
+  if(rangeRight===0||rangeRight>=entries.length) rangeRight=entries.length-1;
+  if(rangeLeft>=entries.length) rangeLeft=0;
+  if(entries.length===1){ rangeLeft=0; rangeRight=0; }
+
+  rangeWrap.style.display=entries.length>1?'':'none';
+  if(entries.length>1) updateSliderUI();
+
+  const visEntries=entries.slice(rangeLeft,rangeRight+1);
 
   empty.style.display='none';
   canvas.style.display='block';
@@ -1417,7 +1489,7 @@ function renderChart(){
   ctx.scale(PR,PR);
   ctx.clearRect(0,0,W,H);
 
-  const vals=entries.map(e=>e.amount);
+  const vals=visEntries.map(e=>e.amount);
   const minV=Math.min(...vals);
   const maxV=Math.max(...vals);
   const ySteps=niceSteps(minV,maxV,5);
@@ -1433,15 +1505,15 @@ function renderChart(){
   const gw=W-pad.l-pad.r;
   const gh=H-pad.t-pad.b;
 
-  const dates=entries.map(e=>new Date(e.date+'T00:00:00').getTime());
+  const dates=visEntries.map(e=>new Date(e.date+'T00:00:00').getTime());
   const tMin=dates[0];
   const tMax=dates[dates.length-1];
   const tRange=tMax-tMin||1;
 
-  function xOf(ts){ return entries.length===1?pad.l+gw/2:pad.l+((ts-tMin)/tRange)*gw; }
+  function xOf(ts){ return visEntries.length===1?pad.l+gw/2:pad.l+((ts-tMin)/tRange)*gw; }
   function yOf(v){ return pad.t+gh-((v-yMin)/yRange)*gh; }
 
-  cPts=entries.map((e,i)=>({x:xOf(dates[i]),y:yOf(e.amount),entry:e,idx:i}));
+  cPts=visEntries.map((e,i)=>({x:xOf(dates[i]),y:yOf(e.amount),entry:e,idx:rangeLeft+i}));
 
   // ── Y grid & labels ──
   ctx.textAlign='right';
@@ -1490,7 +1562,7 @@ function renderChart(){
   const rangeDays=rangeMs/86400000;
   // if range < 60 days show each entry date, else show months
   if(rangeDays<60){
-    entries.forEach((_,i)=>{
+    visEntries.forEach((_,i)=>{
       const d=new Date(dates[i]);
       const lbl=d.getDate()+' '+MN[d.getMonth()];
       const x=cPts[i].x;
@@ -1541,21 +1613,23 @@ function renderChart(){
     ctx.strokeStyle='rgba(90,157,191,0.6)'; ctx.lineWidth=2; ctx.stroke();
   });
 
-  if(aIdx<0||aIdx>=entries.length) aIdx=entries.length-1;
-  updateTip(aIdx);
+  // init tip to last visible point
+  const initCptIdx=cPts.length-1;
+  aIdx=cPts[initCptIdx].idx;
+  updateTip(initCptIdx);
 }
 
-function updateTip(i){
-  if(!cPts.length||i<0||i>=cPts.length) return;
-  aIdx=i;
-  const p=cPts[i];
+function updateTip(cptI){
+  if(!cPts.length||cptI<0||cptI>=cPts.length) return;
+  const p=cPts[cptI];
+  aIdx=p.idx;
   const e=p.entry;
   const d=new Date(e.date+'T00:00:00');
   document.getElementById('ct-d').textContent=d.toLocaleDateString('ru-RU',{day:'numeric',month:'long',year:'numeric'});
   document.getElementById('ct-v').textContent=fmtInt(e.amount)+' ₽';
   const dlEl=document.getElementById('ct-dl');
-  if(i>0){
-    const prev=entries[i-1].amount;
+  if(p.idx>0){
+    const prev=entries[p.idx-1].amount;
     const delta=e.amount-prev;
     dlEl.textContent=(delta>=0?'+':'')+fmtInt(delta)+' ₽ к предыдущей записи';
     dlEl.style.color=delta>=0?'var(--darkblue)':'#E8001C';
